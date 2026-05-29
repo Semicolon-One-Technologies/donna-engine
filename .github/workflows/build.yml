@@ -44,7 +44,7 @@ jobs:
           push: true
           tags: ${{ steps.ecr.outputs.registry }}/dograh-ui:latest
 
-deploy:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
