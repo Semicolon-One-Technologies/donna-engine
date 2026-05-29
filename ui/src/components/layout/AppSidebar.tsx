@@ -339,7 +339,7 @@ export function AppSidebar() {
               className="notranslate flex items-center gap-2 px-1"
               translate="no"
             >
-              <BrandLogo mark className="h-6" />
+              Donna Engine
               {versionInfo && (
                 <span
                   className="notranslate text-xs font-normal text-muted-foreground"

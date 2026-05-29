@@ -43,7 +43,7 @@ export const ApiKeyErrorDialog = ({
                                 <p className="font-medium text-foreground">{error}</p>
                                 {isBillingCreditsError && (
                                     <p className="text-muted-foreground">
-                                        Purchase credits from Billing to continue using Dograh-managed models.
+                                        Your Donna Engine service credits are too low to start a call.
                                     </p>
                                 )}
                             </div>
