@@ -1,0 +1,127 @@
+name: Deploy to EC2 Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy (branch, tag, or commit SHA)
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+
+    steps:
+      - name: Validate required configuration
+        env:
+          EC2_HOST: ${{ vars.EC2_HOST }}
+          EC2_USER: ${{ vars.EC2_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          OSS_JWT_SECRET: ${{ secrets.OSS_JWT_SECRET }}
+        run: |
+          set -euo pipefail
+
+          missing=""
+          for name in EC2_HOST EC2_USER DEPLOY_PATH SSH_PRIVATE_KEY REDIS_URL OSS_JWT_SECRET; do
+            if [ -z "${!name:-}" ]; then
+              missing="$missing $name"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "Missing required GitHub Environment vars/secrets:$missing"
+            exit 1
+          fi
+
+      - name: Setup SSH key
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' '${{ secrets.EC2_SSH_PRIVATE_KEY }}' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Trust EC2 host key
+        run: |
+          set -euo pipefail
+          ssh-keyscan -H '${{ vars.EC2_HOST }}' >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy stack on EC2
+        env:
+          DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
+          EC2_HOST: ${{ vars.EC2_HOST }}
+          EC2_USER: ${{ vars.EC2_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          OSS_JWT_SECRET: ${{ secrets.OSS_JWT_SECRET }}
+          REGISTRY: ${{ vars.REGISTRY }}
+          BACKEND_API_ENDPOINT: ${{ vars.BACKEND_API_ENDPOINT }}
+          BACKEND_URL: ${{ vars.BACKEND_URL }}
+          MINIO_PUBLIC_ENDPOINT: ${{ vars.MINIO_PUBLIC_ENDPOINT }}
+          TURN_HOST: ${{ vars.TURN_HOST }}
+          TURN_SECRET: ${{ secrets.TURN_SECRET }}
+          FORCE_TURN_RELAY: ${{ vars.FORCE_TURN_RELAY }}
+          ENABLE_TELEMETRY: ${{ vars.ENABLE_TELEMETRY }}
+          FASTAPI_WORKERS: ${{ vars.FASTAPI_WORKERS }}
+        run: |
+          set -euo pipefail
+
+          ssh "$EC2_USER@$EC2_HOST" \
+            "set -euo pipefail; \
+            cd '$DEPLOY_PATH'; \
+            git fetch --all --tags; \
+            git checkout '$DEPLOY_REF'; \
+            git pull --ff-only origin '$DEPLOY_REF'; \
+            REDIS_URL='$REDIS_URL' \
+            OSS_JWT_SECRET='$OSS_JWT_SECRET' \
+            REGISTRY='${REGISTRY:-}' \
+            BACKEND_API_ENDPOINT='${BACKEND_API_ENDPOINT:-}' \
+            BACKEND_URL='${BACKEND_URL:-}' \
+            MINIO_PUBLIC_ENDPOINT='${MINIO_PUBLIC_ENDPOINT:-}' \
+            TURN_HOST='${TURN_HOST:-}' \
+            TURN_SECRET='${TURN_SECRET:-}' \
+            FORCE_TURN_RELAY='${FORCE_TURN_RELAY:-}' \
+            ENABLE_TELEMETRY='${ENABLE_TELEMETRY:-}' \
+            FASTAPI_WORKERS='${FASTAPI_WORKERS:-}' \
+            docker compose pull api ui; \
+            REDIS_URL='$REDIS_URL' \
+            OSS_JWT_SECRET='$OSS_JWT_SECRET' \
+            REGISTRY='${REGISTRY:-}' \
+            BACKEND_API_ENDPOINT='${BACKEND_API_ENDPOINT:-}' \
+            BACKEND_URL='${BACKEND_URL:-}' \
+            MINIO_PUBLIC_ENDPOINT='${MINIO_PUBLIC_ENDPOINT:-}' \
+            TURN_HOST='${TURN_HOST:-}' \
+            TURN_SECRET='${TURN_SECRET:-}' \
+            FORCE_TURN_RELAY='${FORCE_TURN_RELAY:-}' \
+            ENABLE_TELEMETRY='${ENABLE_TELEMETRY:-}' \
+            FASTAPI_WORKERS='${FASTAPI_WORKERS:-}' \
+            docker compose up -d --remove-orphans; \
+            docker compose ps"
+
+      - name: Smoke check API health
+        env:
+          EC2_HOST: ${{ vars.EC2_HOST }}
+          EC2_USER: ${{ vars.EC2_USER }}
+        run: |
+          set -euo pipefail
+          ssh "$EC2_USER@$EC2_HOST" "curl -fsS http://localhost:8000/api/v1/health > /dev/null"
+
+      - name: Cleanup SSH key
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_rsa
