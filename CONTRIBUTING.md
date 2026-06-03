@@ -1,63 +1,21 @@
-# Contributing to Dograh AI
+# Contributing to Donna
 
-Welcome to Dograh AI! ❤️ Thank you for your interest in contributing to the future of open-source voice AI. ❤️
+Donna is a proprietary product by Semicolon One Technologies.
+All rights reserved. Copyrights enforced.
 
-Dograh AI is a comprehensive voice agent platform that helps developers build, test, and deploy conversational AI systems with minimal setup. This guide will help you understand the project structure, set up your development environment, and start contributing effectively.
+## Contribution Policy
 
-👉 Join our community → [Dograh Community Slack](https://join.slack.com/t/dograh-community/shared_invite/zt-3zjb5vwvl-j7hRz3_F1SOn5cH~jm5f5g)
+External code contributions are accepted only with prior written approval from Semicolon One Technologies.
+If you want to propose an improvement, contact Semicolon One Technologies through official company channels.
 
-## 🏗️ Project Overview
+## Development Setup
 
-### What is Dograh AI?
+For local development instructions in this repository, refer to the setup guides under `docs/contribution/`.
 
-Dograh AI is a full-stack platform for building voice agents with a drag-and-drop workflow builder. It combines multiple technologies to provide a seamless experience from development to production deployment.
+## Legal
 
-## 🙌 How You Can Contribute
+By submitting any contribution, you acknowledge that:
 
-- 🐛 **Report bugs** via [GitHub Issues](https://github.com/dograh-hq/dograh/issues)
-- 💡 **Suggest features** via [Ideas](https://github.com/orgs/dograh-hq/discussions/categories/ideas)
-- 🔧 **Submit pull requests**
-- 📖 **Improve documentation** The documentation is hosted via mintlify and the code is in `docs/` folder
-- 💬 **Join the Slack community**
-
-👉 A great place to start is with issues tagged **`good first issue`**.
-
-> And if you like the project, but just don't have time to contribute code, that's fine. There are other easy ways to support the project:
->
-> - Star the project;
-> - Tweet about it;
-> - Refer to this project in your project's readme;
-> - Submit and vote on [Ideas](https://github.com/orgs/dograh-hq/discussions/categories/ideas);
-> - Create and comment on [Issues](https://github.com/dograh-hq/dograh/issues);
-> - Mention the project at local meetups and tell your friends/colleagues.
-
-## 🚀 Development Setup
-
-Please refer to our [Development Setup documentation](https://docs.dograh.com/contribution/setup).
-
-### Getting Help
-
-**Before You Start**
-
-- Check existing [GitHub Issues](../../issues) for similar work
-- Join our [Slack community](https://join.slack.com/t/dograh-community/shared_invite/zt-3zjb5vwvl-j7hRz3_F1SOn5cH~jm5f5g) to discuss your plans
-- Look for issues tagged `good first issue` for beginner-friendly tasks
-
-**During Development**
-
-- Ask questions in our Slack community
-- Reference related issues and PRs in your discussions
-- Share early drafts for feedback on complex features
-
-## 💬 Community & Support
-
-Our Slack community is the heart of Dograh AI development:
-
-- **Get Help**: Setup assistance and debugging support
-- **Collaborate**: Discuss features and architectural decisions
-- **Connect**: Meet other contributors and maintainers
-- **Stay Updated**: Learn about contribution opportunities and releases
-
-👉 **Join us**: [Dograh Community Slack](https://join.slack.com/t/dograh-community/shared_invite/zt-3zjb5vwvl-j7hRz3_F1SOn5cH~jm5f5g)
-
-Thank you for helping us keep voice AI open and accessible! 🎉
+- Donna and related code are proprietary to Semicolon One Technologies.
+- Submission does not grant any license to Donna IP except as explicitly agreed in writing.
+- Semicolon One Technologies may accept, modify, or reject submissions at its sole discretion.

@@ -1,5 +1,7 @@
 # Pricing Module
 
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
 This module contains pricing models and registries for different AI services used in workflow cost calculations.
 
 ## Structure

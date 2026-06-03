@@ -1,6 +1,8 @@
 # Telephony Provider Implementation
 
-This module implements the telephony provider abstraction for Dograh AI. For user-facing documentation, see the [Mintlify docs](https://docs.dograh.com/integrations/telephony/overview).
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
+This module implements the telephony provider abstraction for Donna.
 
 ## Architecture
 
@@ -49,7 +51,7 @@ telephony/
 
 ## Implementing a New Provider
 
-See the [Custom Provider Guide](https://docs.dograh.com/integrations/telephony/custom) in the documentation for detailed implementation instructions.
+See the internal product documentation for detailed implementation instructions.
 
 Quick checklist:
 1. Create `providers/your_provider.py` implementing `TelephonyProvider`
@@ -167,7 +169,5 @@ await provider.initiate_call(...)
 
 ## Related Documentation
 
-- [User Documentation](https://docs.dograh.com/integrations/telephony/overview)
-- [Twilio Integration](https://docs.dograh.com/integrations/telephony/twilio)
-- [Custom Providers](https://docs.dograh.com/integrations/telephony/custom)
-- [Webhooks Guide](https://docs.dograh.com/integrations/telephony/webhooks)
+- Website: https://speaktodonna.com
+- Customer Portal: https://portal.speaktodonna.com

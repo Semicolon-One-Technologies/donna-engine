@@ -1,13 +1,15 @@
-# dograh-sdk
+# donna-sdk
 
-Typed builder for Dograh voice-AI workflows. Fetches the node-spec catalog from
-the Dograh backend at session start, validates every call against it at the
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
+Typed builder for Donna voice-AI workflows. Fetches the node-spec catalog from
+the Donna backend at session start, validates every call against it at the
 call site, and produces `ReactFlowDTO`-compatible JSON.
 
 ## Install
 
 ```bash
-pip install dograh-sdk
+pip install donna-sdk
 ```
 
 For local development against a checked-out monorepo:
@@ -19,9 +21,9 @@ pip install -e sdk/python/
 ## Usage
 
 ```python
-from dograh_sdk import DograhClient, Workflow
+from donna_sdk import DonnaClient, Workflow
 
-with DograhClient(base_url="http://localhost:8000", api_key="...") as client:
+with DonnaClient(base_url="http://localhost:8000", api_key="...") as client:
     wf = Workflow(client=client, name="loan_qualification")
 
     start = wf.add(
@@ -68,10 +70,10 @@ through (compound invariants, cross-field rules).
 ## Environment
 
 ```bash
-DOGRAH_API_URL=http://localhost:8000   # default
-DOGRAH_API_KEY=sk-...                  # sent as X-API-Key
+DONNA_API_URL=http://localhost:8000   # default
+DONNA_API_KEY=sk-...                  # sent as X-API-Key
 ```
 
 ## License
 
-BSD 2-Clause — see `LICENSE`.
+Proprietary software. Usage is governed by Semicolon One Technologies agreements.

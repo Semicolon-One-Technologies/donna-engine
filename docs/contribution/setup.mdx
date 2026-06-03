@@ -1,9 +1,9 @@
 ---
 title: Setup
-description: Set up the Dograh contributor environment with the devcontainer-first workflow.
+description: Set up the Donna contributor environment with the devcontainer-first workflow.
 ---
 <Note>
-If the steps below do not work for you, please open an issue on [GitHub](https://github.com/dograh-hq/dograh/issues).
+If the steps below do not work for you, contact Semicolon One Technologies through official support channels.
 </Note>
 
 ### Recommended: Devcontainer Setup
@@ -14,11 +14,11 @@ If the steps below do not work for you, please open an issue on [GitHub](https:/
 - For the IDE path: VS Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 - For the terminal-only path: Node.js on your host so you can install the Dev Container CLI
 
-1. Fork the Dograh repository at https://github.com/dograh-hq/dograh
+1. Fork the Donna repository.
 2. Clone **your fork**:
 ```bash
-git clone https://github.com/<GITHUB_HANDLE>/dograh
-cd dograh
+git clone <your-fork-url>
+cd donna-engine
 ```
 3. Start the devcontainer.
 
@@ -59,5 +59,5 @@ curl -X GET localhost:8000/api/v1/health
 ### More Setup Options
 
 - For what the devcontainer bootstrap does, rebuild guidance, logs, and personal install hooks, see [Devcontainer Workflow](/contribution/devcontainer).
-- If you cloned `dograh-hq/dograh` directly instead of your fork, see [Fork Workflow](/contribution/fork-workflow) to reset `origin` and `upstream`.
+- If you cloned the upstream repository directly instead of your fork, see [Fork Workflow](/contribution/fork-workflow) to reset `origin` and `upstream`.
 - If you do not want to use the devcontainer, see [Host-managed Setup](/contribution/host-managed-setup).
