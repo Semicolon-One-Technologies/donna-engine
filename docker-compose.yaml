@@ -111,7 +111,7 @@ services:
       - app-network
 
   api:
-    image: ${REGISTRY:-dograhai}/dograh-api:latest
+    image: ${REGISTRY:-dograhai}/dograh-api:${IMAGE_TAG:-latest}
     volumes:
       - shared-tmp:/tmp
     environment:
@@ -204,7 +204,7 @@ services:
       - app-network
 
   ui:
-    image: ${REGISTRY:-dograhai}/dograh-ui:latest
+    image: ${REGISTRY:-dograhai}/dograh-ui:${IMAGE_TAG:-latest}
     environment:
       # Bind the Next.js standalone server to all interfaces
       HOSTNAME: "0.0.0.0"
