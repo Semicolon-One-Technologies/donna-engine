@@ -272,7 +272,7 @@
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg",
-    "href": "https://docs.dograh.com"
+    "href": "https://speaktodonna.com"
   },
   "navbar": {
     "links": [
@@ -292,11 +292,11 @@
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://app.dograh.com"
+      "href": "https://portal.speaktodonna.com"
     }
   },
   "banner": {
-    "content": "🎉 **New: MCP Server & SDKs Released** — Drive Dograh from Claude, Cursor, or your own Python/TypeScript code. [MCP →](/integrations/mcp) · [SDKs →](/sdks/introduction)",
+    "content": "🎉 **New: MCP Server & SDKs Released** — Drive Donna from Claude, Cursor, or your own Python/TypeScript code. [MCP →](/integrations/mcp) · [SDKs →](/sdks/introduction)",
     "dismissible": true
   },
   "search": {
