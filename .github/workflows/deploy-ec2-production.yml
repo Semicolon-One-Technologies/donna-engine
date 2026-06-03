@@ -8,6 +8,11 @@ on:
         required: false
         default: main
         type: string
+      build_on_server:
+        description: Build api/ui on EC2 from source instead of pulling prebuilt images
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -64,6 +69,7 @@ jobs:
       - name: Deploy stack on EC2
         env:
           DEPLOY_REF: ${{ github.event.inputs.ref || 'main' }}
+          BUILD_ON_SERVER: ${{ github.event.inputs.build_on_server || 'false' }}
           EC2_HOST: ${{ vars.EC2_HOST }}
           EC2_USER: ${{ vars.EC2_USER }}
           DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
@@ -80,6 +86,12 @@ jobs:
           FASTAPI_WORKERS: ${{ vars.FASTAPI_WORKERS }}
         run: |
           set -euo pipefail
+
+          if [ "$BUILD_ON_SERVER" = "true" ]; then
+            DEPLOY_IMAGE_CMD="docker build -f api/Dockerfile -t ${REGISTRY:-dograhai}/dograh-api:latest . && docker build -f ui/Dockerfile -t ${REGISTRY:-dograhai}/dograh-ui:latest ."
+          else
+            DEPLOY_IMAGE_CMD="docker compose --profile remote pull api ui"
+          fi
 
           ssh "$EC2_USER@$EC2_HOST" \
             "set -euo pipefail; \
@@ -98,7 +110,7 @@ jobs:
             FORCE_TURN_RELAY='${FORCE_TURN_RELAY:-}' \
             ENABLE_TELEMETRY='${ENABLE_TELEMETRY:-}' \
             FASTAPI_WORKERS='${FASTAPI_WORKERS:-}' \
-            docker compose pull api ui; \
+            $DEPLOY_IMAGE_CMD; \
             REDIS_URL='$REDIS_URL' \
             OSS_JWT_SECRET='$OSS_JWT_SECRET' \
             REGISTRY='${REGISTRY:-}' \
@@ -110,8 +122,8 @@ jobs:
             FORCE_TURN_RELAY='${FORCE_TURN_RELAY:-}' \
             ENABLE_TELEMETRY='${ENABLE_TELEMETRY:-}' \
             FASTAPI_WORKERS='${FASTAPI_WORKERS:-}' \
-            docker compose up -d --remove-orphans; \
-            docker compose ps"
+            docker compose --profile remote up -d --remove-orphans; \
+            docker compose --profile remote ps"
 
       - name: Smoke check API health
         env:
