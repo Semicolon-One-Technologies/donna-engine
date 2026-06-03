@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+import { GitHubStarBadge } from '@/components/layout/GitHubStarBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth';
@@ -26,7 +27,7 @@ export default function OverviewPage() {
                         <CardDescription className="text-lg mt-2">
                             {isOSSMode ? (
                                 <>
-                                    Donna Engine is a proprietary voice AI platform by Semicolon One Technologies.
+                                    Open source alternative to Vapi. Help us support the project by giving us a star on GitHub.
                                 </>
                             ) : (
                                 "Get started with building voice AI workflows"
@@ -35,9 +36,9 @@ export default function OverviewPage() {
                     </CardHeader>
                     <CardContent>
                         {isOSSMode && (
-                            <p className="mb-6 text-sm text-muted-foreground">
-                                © 2026 Semicolon One Technologies. All rights reserved.
-                            </p>
+                            <div className="mb-6">
+                                <GitHubStarBadge label="Star us on GitHub" showCount source="overview_page" />
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -89,20 +90,20 @@ export default function OverviewPage() {
                         <div className="flex flex-wrap gap-4">
                             <Button asChild variant="outline">
                                 <a
-                                    href="https://speaktodonna.com"
+                                    href="https://docs.dograh.com"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
-                                    Website
+                                    Documentation
                                 </a>
                             </Button>
                             <Button asChild variant="outline">
                                 <a
-                                    href="https://portal.speaktodonna.com"
+                                    href="https://github.com/dograh-hq/dograh/issues"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >
-                                    Customer Portal
+                                    Report an Issue
                                 </a>
                             </Button>
                         </div>
