@@ -262,7 +262,6 @@
           {
             "group": "Authentication & Errors",
             "pages": [
-              "api-reference/overview",
               "api-reference/authentication",
               "api-reference/errors"
             ]
@@ -279,8 +278,16 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "https://github.com/dograh-hq/dograh/issues/new/choose"
+        "label": "© Semicolon One Technologies",
+        "href": "https://speaktodonna.com"
+      },
+      {
+        "label": "Customer Portal",
+        "href": "https://portal.speaktodonna.com"
+      },
+      {
+        "label": "Website",
+        "href": "https://speaktodonna.com"
       }
     ],
     "primary": {
@@ -309,12 +316,7 @@
       "vscode"
     ]
   },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/dograh-hq",
-      "linkedin": "https://linkedin.com/company/dograh"
-    }
-  },
+  "footer": {},
   "api": {
     "openapi": "api-reference/openapi.json"
   }
