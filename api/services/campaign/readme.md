@@ -1,3 +1,5 @@
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
 ### campaign_orchestrator.py (CampaignOrchestrator)
 
 - Listens to retry events, batch completed event, sync completed events from redis pubsub, and schedules batches

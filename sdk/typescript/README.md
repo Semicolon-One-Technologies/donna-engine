@@ -1,16 +1,18 @@
-# @dograh/sdk
+# @donna/sdk
 
-Typed builder for Dograh voice-AI workflows. Fetches the node-spec catalog from
-the Dograh backend at session start, validates every call against it at the
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
+Typed builder for Donna voice-AI workflows. Fetches the node-spec catalog from
+the Donna backend at session start, validates every call against it at the
 call site, and produces wire-format JSON that round-trips through the Python
 `ReactFlowDTO`.
 
 ## Install
 
 ```bash
-npm install @dograh/sdk
+npm install @donna/sdk
 # or
-pnpm add @dograh/sdk
+pnpm add @donna/sdk
 ```
 
 For local development against a checked-out monorepo, add a tsconfig paths
@@ -19,7 +21,7 @@ entry:
 ```json
 {
   "paths": {
-    "@dograh/sdk": ["../sdk/typescript/src/index.ts"]
+    "@donna/sdk": ["../sdk/typescript/src/index.ts"]
   }
 }
 ```
@@ -27,11 +29,11 @@ entry:
 ## Usage
 
 ```ts
-import { DograhClient, Workflow } from "@dograh/sdk";
+import { DonnaClient, Workflow } from "@donna/sdk";
 
-const client = new DograhClient({
+const client = new DonnaClient({
   baseUrl: "http://localhost:8000",
-  apiKey: process.env.DOGRAH_API_KEY,
+  apiKey: process.env.DONNA_API_KEY,
 });
 
 const wf = new Workflow({ client, name: "loan_qualification" });
@@ -82,10 +84,10 @@ lets through.
 ## Environment
 
 ```bash
-DOGRAH_API_URL=http://localhost:8000   # default
-DOGRAH_API_KEY=sk-...                  # sent as X-API-Key
+DONNA_API_URL=http://localhost:8000   # default
+DONNA_API_KEY=sk-...                  # sent as X-API-Key
 ```
 
 ## License
 
-BSD 2-Clause — see `LICENSE`.
+Proprietary software. Usage is governed by Semicolon One Technologies agreements.

@@ -1,5 +1,7 @@
 # STT Evaluation Benchmark
 
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
 Benchmark for comparing Speech-to-Text providers using **WebSocket streaming** with focus on:
 - **Speaker diarization** - identifying who said what
 - **Keyterm boosting** - improving recognition of specific terms (Deepgram)
@@ -36,7 +38,7 @@ python -m evals.stt.benchmark audio/multi_speaker.m4a --diarize
 python -m evals.stt.benchmark audio/multi_speaker.m4a --diarize --providers deepgram
 
 # Test with keyterm boosting (Deepgram)
-python -m evals.stt.benchmark audio/multi_speaker.m4a --diarize --keyterms "Dograh" "Pipecat"
+python -m evals.stt.benchmark audio/multi_speaker.m4a --diarize --keyterms "Donna" "Pipecat"
 
 # Use different sample rate (default: 8000 Hz)
 python -m evals.stt.benchmark audio/multi_speaker.m4a --diarize --sample-rate 16000

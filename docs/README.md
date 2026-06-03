@@ -1,7 +1,9 @@
-# Dograh AI Documentation
+# Donna Documentation
+
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
 
 ### Local Setup
 
 1. Install mintlify `npm i -g mint`
 1. Clone the repository
-1. `cd dograh/docs` and run `mint dev`
+1. `cd donna/docs` and run `mint dev`

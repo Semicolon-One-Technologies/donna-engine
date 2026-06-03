@@ -1,5 +1,7 @@
 # Gender Prediction Service
 
+> Proprietary Notice: Donna is a proprietary tool by Semicolon One Technologies. All rights reserved. Copyrights enforced.
+
 An internal service for predicting gender from first names using SSA (Social Security Administration) baby names data with GenderAPI fallback for uncertain predictions.
 
 ## Overview
@@ -25,7 +27,7 @@ https://catalog.data.gov/dataset/baby-names-from-social-security-card-applicatio
 
 ```bash
 # Navigate to the gender service directory
-cd dograh/api/services/gender/
+cd donna/api/services/gender/
 
 # Run the model builder
 python build_model.py
