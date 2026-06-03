@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 
+import ChatwootWidget from "@/components/ChatwootWidget";
 import AppLayout from "@/components/layout/AppLayout";
 import PostHogIdentify from "@/components/PostHogIdentify";
 import { SentryErrorBoundary } from "@/components/SentryErrorBoundary";
@@ -29,7 +30,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Donna Engine",
-  description: "Proprietary voice AI workflow builder by Semicolon One Technologies",
+  description: "Open Source Voice Assistant Workflow Builder",
 };
 
 export default function RootLayout({
@@ -77,6 +78,7 @@ export default function RootLayout({
                           {children}
                         </AppLayout>
                         <Toaster />
+                        <ChatwootWidget />
                       </OnboardingProvider>
                     </TelephonyConfigWarningsProvider>
                   </OrgConfigProvider>
