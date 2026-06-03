@@ -10,8 +10,8 @@ import {
   ChevronRight,
   CircleDollarSign,
   Database,
+  ExternalLink,
   FileText,
-  Home,
   Key,
   LogOut,
   type LucideIcon,
@@ -76,15 +76,6 @@ type SidebarNavSection = {
 const TELEPHONY_WARNING_COPY = "Action required";
 
 const NAV_SECTIONS: SidebarNavSection[] = [
-  {
-    items: [
-      {
-        title: "Overview",
-        url: "/overview",
-        icon: Home,
-      },
-    ],
-  },
   {
     label: "BUILD",
     items: [
@@ -353,7 +344,7 @@ export function AppSidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <a
-                    href="https://docs.dograh.com/deployment/update"
+                    href="https://speaktodonna.com"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 rounded-md border bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-amber-900 transition-opacity hover:opacity-80 dark:bg-amber-950 dark:text-amber-200"
@@ -441,6 +432,32 @@ export function AppSidebar() {
         translate="no"
       >
         <div className="space-y-2">
+          {!isCollapsed && (
+            <div className="space-y-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+              <p>© 2026 Semicolon One Technologies. All rights reserved.</p>
+              <div className="flex flex-wrap gap-3">
+                <a
+                  href="https://speaktodonna.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-foreground"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Website
+                </a>
+                <a
+                  href="https://portal.speaktodonna.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-foreground"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Portal
+                </a>
+              </div>
+            </div>
+          )}
+
           {provider !== "stack" && (
             <div
               className={cn(
