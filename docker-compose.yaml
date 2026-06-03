@@ -26,22 +26,6 @@ services:
     networks:
       - app-network
 
-  redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
-    command: >
-      --requirepass redissecret
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "redissecret", "ping"]
-      interval: 3s
-      timeout: 10s
-      retries: 10
-    networks:
-      - app-network
-
   minio:
     image: minio/minio
     container_name: minio
@@ -142,8 +126,10 @@ services:
       # Database configuration (using containerized postgres)
       DATABASE_URL: "postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres"
 
-      # Redis configuration (using containerized redis)
-      REDIS_URL: "redis://:redissecret@redis:6379"
+      # Redis configuration (external ElastiCache/Valkey over TLS)
+      # Example format:
+      # rediss://:<auth_token>@donna-cache-tutpax.serverless.cac1.cache.amazonaws.com:6379/0
+      REDIS_URL: "${REDIS_URL:?REDIS_URL must be set to your external ElastiCache endpoint}"
 
       # Storage configuration - using local MinIO
       ENABLE_AWS_S3: "false"
@@ -199,8 +185,6 @@ services:
       - "8000:8000"
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       minio:
         condition: service_healthy
@@ -264,7 +248,6 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
   minio-data:
     driver: local
   shared-tmp:
