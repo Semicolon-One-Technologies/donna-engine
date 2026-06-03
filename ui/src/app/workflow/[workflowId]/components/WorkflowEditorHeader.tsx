@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactFlowInstance } from "@xyflow/react";
-import { AlertCircle, ArrowLeft, Bot, Clipboard, Copy, Download, Eye, History, LoaderCircle, Menu, MoreVertical, Pencil, Phone, Rocket } from "lucide-react";
+import { AlertCircle, ArrowLeft, Bot, Clipboard, Copy, Download, ExternalLink, Eye, History, LoaderCircle, Menu, MoreVertical, Pencil, Phone, Rocket } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import {
 } from "@/client/sdk.gen";
 import { WorkflowError } from "@/client/types.gen";
 import { FlowEdge, FlowNode } from "@/components/flow/types";
-import { GitHubStarBadge } from "@/components/layout/GitHubStarBadge";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -495,9 +494,17 @@ export const WorkflowEditorHeader = ({
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* GitHub star badge - desktop only */}
-                <div className="hidden md:block">
-                    <GitHubStarBadge className="border-[#3a3a3a] bg-[#2a2a2a] text-white [&_span]:bg-transparent" source="workflow_editor_header" />
+                <div className="hidden items-center gap-2 text-xs text-gray-300 md:flex">
+                    <span>© 2026 Semicolon One Technologies</span>
+                    <a
+                        href="https://portal.speaktodonna.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-md border border-[#3a3a3a] bg-[#2a2a2a] px-2.5 py-1.5 text-white hover:bg-[#333333]"
+                    >
+                        <ExternalLink className="h-4 w-4" />
+                        Portal
+                    </a>
                 </div>
             </div>
         </div>
