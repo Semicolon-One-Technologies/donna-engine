@@ -27,7 +27,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useRef } from "react";
 
-import { BrandLogo } from "@/components/BrandLogo";
 import ThemeToggle from "@/components/ThemeSwitcher";
 import { Button } from "@/components/ui/button";
 import {
