@@ -665,7 +665,6 @@
 
     } catch (error) {
       console.error('Donna Engine Widget: Failed to start call', error);
-
       // Release anything acquired before the failure so a retry starts clean.
       // getUserMedia may have succeeded before a later step (WebSocket /
       // negotiation) threw, which would otherwise leave the mic held and block
@@ -689,7 +688,6 @@
           ws.close();
         }
       }
-
       updateStatus('failed', 'Connection failed', error.message || 'Please check your microphone and try again');
 
       // Trigger error callback
