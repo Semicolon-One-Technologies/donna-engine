@@ -12,11 +12,11 @@ import {
 } from "@/components/ServiceConfigurationForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VoiceSelectorModal } from "@/components/VoiceSelectorModal";
 import { LANGUAGE_DISPLAY_NAMES } from "@/constants/languages";
 
 type ModelMode = "realtime" | "dograh" | "byok";
@@ -25,6 +25,11 @@ interface DograhDefaults {
     voices: string[];
     allow_custom_input?: boolean;
     speeds: number[];
+    speed_range?: {
+        min: number;
+        max: number;
+        step?: number;
+    };
     languages: string[];
     defaults: {
         voice: string;
@@ -64,6 +69,11 @@ interface AIModelConfigurationV2EditorProps {
 function firstApiKey(value: unknown): string {
     if (Array.isArray(value)) return String(value[0] || "");
     return typeof value === "string" ? value : "";
+}
+
+function numberOrDefault(value: unknown, fallback: number): number {
+    const parsed = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -170,7 +180,7 @@ function buildDograhState(
         return {
             api_key: String(configuredDograh.api_key || ""),
             voice: String(configuredDograh.voice || fallback.voice),
-            speed: Number(configuredDograh.speed || fallback.speed),
+            speed: numberOrDefault(configuredDograh.speed, fallback.speed),
             language: String(configuredDograh.language || fallback.language),
         };
     }
@@ -182,7 +192,7 @@ function buildDograhState(
         return {
             api_key: firstApiKey(llm?.api_key || tts?.api_key || stt?.api_key),
             voice: String(tts?.voice || fallback.voice),
-            speed: Number(tts?.speed || fallback.speed),
+            speed: numberOrDefault(tts?.speed, fallback.speed),
             language: String(stt?.language || fallback.language),
         };
     }
@@ -268,10 +278,10 @@ export function AIModelConfigurationV2Editor({
     const [realtimeInitialConfig, setRealtimeInitialConfig] = useState<Record<string, unknown> | null>(null);
     const [pipelineInitialConfig, setPipelineInitialConfig] = useState<Record<string, unknown> | null>(null);
     const [isSavingDograh, setIsSavingDograh] = useState(false);
-    const [isCustomVoice, setIsCustomVoice] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const allowCustomVoice = defaults.dograh.allow_custom_input ?? false;
+    const dograhSpeedRange = defaults.dograh.speed_range ?? { min: 0.5, max: 2.0, step: 0.1 };
 
     useEffect(() => {
         const rawConfiguration = asRecord(configuration);
@@ -279,7 +289,6 @@ export function AIModelConfigurationV2Editor({
         setMode(preferredMode(rawConfiguration, rawEffectiveConfiguration));
         const nextDograh = buildDograhState(defaults, rawConfiguration, rawEffectiveConfiguration);
         setDograh(nextDograh);
-        setIsCustomVoice(allowCustomVoice && !defaults.dograh.voices.includes(nextDograh.voice));
         setRealtimeInitialConfig(getByokInitialConfig(rawConfiguration, rawEffectiveConfiguration, true));
         setPipelineInitialConfig(getByokInitialConfig(rawConfiguration, rawEffectiveConfiguration, false));
     }, [configuration, defaults, effectiveConfiguration, allowCustomVoice]);
@@ -288,6 +297,15 @@ export function AIModelConfigurationV2Editor({
         setIsSavingDograh(true);
         setError(null);
         try {
+            if (
+                !Number.isFinite(dograh.speed)
+                || dograh.speed < dograhSpeedRange.min
+                || dograh.speed > dograhSpeedRange.max
+            ) {
+                throw new Error(
+                    `Dograh speed must be between ${dograhSpeedRange.min} and ${dograhSpeedRange.max}.`,
+                );
+            }
             await onSave({
                 version: 2,
                 mode: "dograh",
@@ -370,65 +388,14 @@ export function AIModelConfigurationV2Editor({
                     <Card>
                         <CardContent className="pt-6">
                             <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
+                                <div className="space-y-2 sm:col-span-2">
                                     <Label>Voice</Label>
-                                    {isCustomVoice ? (
-                                        <Input
-                                            placeholder="Enter voice"
-                                            value={dograh.voice}
-                                            onChange={(event) => setDograh({ ...dograh, voice: event.target.value })}
-                                        />
-                                    ) : (
-                                        <Select value={dograh.voice} onValueChange={(voice) => setDograh({ ...dograh, voice })}>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select voice" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {defaults.dograh.voices.map((voice) => (
-                                                    <SelectItem key={voice} value={voice}>
-                                                        {voice}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                    {allowCustomVoice && (
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox
-                                                id="dograh-custom-voice"
-                                                checked={isCustomVoice}
-                                                onCheckedChange={(checked) => {
-                                                    const custom = checked as boolean;
-                                                    setIsCustomVoice(custom);
-                                                    if (!custom) {
-                                                        setDograh({ ...dograh, voice: defaults.dograh.defaults.voice });
-                                                    }
-                                                }}
-                                            />
-                                            <Label htmlFor="dograh-custom-voice" className="text-sm font-normal cursor-pointer">
-                                                Enter Custom Value
-                                            </Label>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Speed</Label>
-                                    <Select
-                                        value={String(dograh.speed)}
-                                        onValueChange={(speed) => setDograh({ ...dograh, speed: Number(speed) })}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select speed" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {defaults.dograh.speeds.map((speed) => (
-                                                <SelectItem key={speed} value={String(speed)}>
-                                                    {speed}x
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <VoiceSelectorModal
+                                        provider="dograh"
+                                        value={dograh.voice}
+                                        onChange={(voice) => setDograh({ ...dograh, voice })}
+                                        allowManualInput={allowCustomVoice}
+                                    />
                                 </div>
 
                                 <div className="space-y-2 sm:col-span-2">
@@ -447,7 +414,26 @@ export function AIModelConfigurationV2Editor({
                                     </Select>
                                 </div>
 
-                                <div className="space-y-2 sm:col-span-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="dograh-speed">Speed</Label>
+                                    <Input
+                                        id="dograh-speed"
+                                        type="number"
+                                        min={dograhSpeedRange.min}
+                                        max={dograhSpeedRange.max}
+                                        step={dograhSpeedRange.step ?? 0.1}
+                                        value={dograh.speed}
+                                        onChange={(event) => {
+                                            const speed = event.currentTarget.valueAsNumber;
+                                            setDograh({
+                                                ...dograh,
+                                                speed: Number.isFinite(speed) ? speed : defaults.dograh.defaults.speed,
+                                            });
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
                                     <Label htmlFor="dograh-api-key">API Key</Label>
                                     <div className="relative">
                                         <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
