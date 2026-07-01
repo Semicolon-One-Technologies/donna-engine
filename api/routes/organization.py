@@ -61,6 +61,7 @@ from api.services.configuration.check_validity import UserConfigurationValidator
 from api.services.configuration.defaults import DEFAULT_SERVICE_PROVIDERS
 from api.services.configuration.masking import is_mask_of, mask_key, mask_user_config
 from api.services.configuration.registry import (
+    DOGRAH_MULTILINGUAL_AUTODETECT_LANGUAGES,
     DOGRAH_STT_LANGUAGES,
     REGISTRY,
     DograhTTSService,
@@ -144,6 +145,7 @@ class TelephonyConfigWarningsResponse(BaseModel):
     """
 
     telnyx_missing_webhook_public_key_count: int
+    vonage_missing_signature_secret_count: int
 
 
 @router.get("/context", response_model=OrganizationContextResponse)
@@ -199,8 +201,7 @@ async def get_telephony_providers_metadata(user: UserModel = Depends(get_user)):
 async def get_telephony_config_warnings(user: UserModel = Depends(get_user)):
     """Return aggregated warning counts for the current org's telephony configs.
 
-    Today this surfaces only Telnyx configs missing ``webhook_public_key``;
-    additional warning types should be added as new fields on the response.
+    Surfaces provider configs missing webhook-verification credentials.
     """
     if not user.selected_organization_id:
         raise HTTPException(status_code=400, detail="No organization selected")
@@ -208,8 +209,12 @@ async def get_telephony_config_warnings(user: UserModel = Depends(get_user)):
     telnyx_missing = await db_client.count_telnyx_configs_missing_webhook_public_key(
         user.selected_organization_id
     )
+    vonage_missing = await db_client.count_vonage_configs_missing_signature_secret(
+        user.selected_organization_id
+    )
     return TelephonyConfigWarningsResponse(
         telnyx_missing_webhook_public_key_count=telnyx_missing,
+        vonage_missing_signature_secret_count=vonage_missing,
     )
 
 
@@ -274,6 +279,7 @@ async def get_model_configuration_v2_defaults(
                 "step": DOGRAH_SPEED_STEP,
             },
             "languages": DOGRAH_STT_LANGUAGES,
+            "multilingual_languages": DOGRAH_MULTILINGUAL_AUTODETECT_LANGUAGES,
             "defaults": {
                 "voice": DOGRAH_DEFAULT_VOICE,
                 "speed": 1.0,

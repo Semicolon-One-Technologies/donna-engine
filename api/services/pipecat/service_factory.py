@@ -6,8 +6,14 @@ from fastapi import HTTPException
 from loguru import logger
 
 from api.constants import MPS_API_URL
-from api.services.configuration.options import DEEPGRAM_FLUX_MODELS
+from api.services.configuration.options import (
+    DEEPGRAM_FLUX_MODELS,
+    DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGE_OPTIONS,
+)
 from api.services.configuration.registry import ServiceProviders
+from api.services.pipecat.gemini_json_schema_adapter import (
+    DograhGeminiJSONSchemaAdapter,
+)
 from api.services.pipecat.minimax_tts import MiniMaxOwnedSessionTTSService
 from api.utils.url_security import validate_user_configured_service_url
 from pipecat.services.assemblyai.stt import AssemblyAISTTService, AssemblyAISTTSettings
@@ -15,18 +21,20 @@ from pipecat.services.aws.llm import AWSBedrockLLMService, AWSBedrockLLMSettings
 from pipecat.services.azure.llm import AzureLLMService, AzureLLMSettings
 from pipecat.services.azure.stt import AzureSTTService, AzureSTTSettings
 from pipecat.services.azure.tts import AzureTTSService, AzureTTSSettings
-from pipecat.services.cartesia.stt import CartesiaSTTService
+from pipecat.services.cartesia.stt import CartesiaSTTService, CartesiaSTTSettings
 from pipecat.services.cartesia.tts import (
     CartesiaTTSService,
     CartesiaTTSSettings,
     GenerationConfig,
 )
+from pipecat.services.cartesia.turns.stt import CartesiaTurnsSTTService
 from pipecat.services.deepgram.flux.stt import (
     DeepgramFluxSTTService,
     DeepgramFluxSTTSettings,
 )
 from pipecat.services.deepgram.stt import DeepgramSTTService, DeepgramSTTSettings
 from pipecat.services.deepgram.tts import DeepgramTTSService, DeepgramTTSSettings
+from pipecat.services.dograh.flux.stt import DograhFluxSTTService
 from pipecat.services.dograh.llm import DograhLLMService
 from pipecat.services.dograh.stt import DograhSTTService, DograhSTTSettings
 from pipecat.services.dograh.tts import DograhTTSService, DograhTTSSettings
@@ -92,6 +100,29 @@ DEEPGRAM_FLUX_LANGUAGE_HINTS = {
     "pt": Language.PT,
     "ru": Language.RU,
 }
+
+
+def dograh_stt_uses_flux_language(language: str | None) -> bool:
+    language = language or "multi"
+    return language in DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGE_OPTIONS
+
+
+def stt_uses_external_turns(user_config) -> bool:
+    if user_config.stt.provider == ServiceProviders.DEEPGRAM.value:
+        return user_config.stt.model in DEEPGRAM_FLUX_MODELS
+    if user_config.stt.provider == ServiceProviders.DOGRAH.value:
+        return dograh_stt_uses_flux_language(getattr(user_config.stt, "language", None))
+    if user_config.stt.provider == ServiceProviders.CARTESIA.value:
+        return user_config.stt.model == "ink-2"
+    return False
+
+
+class DograhGoogleLLMService(GoogleLLMService):
+    adapter_class = DograhGeminiJSONSchemaAdapter
+
+
+class DograhGoogleVertexLLMService(GoogleVertexLLMService):
+    adapter_class = DograhGeminiJSONSchemaAdapter
 
 
 def _validate_runtime_service_url(url: str, field_name: str) -> None:
@@ -166,6 +197,7 @@ def create_stt_service(
         return OpenAISTTService(
             api_key=user_config.stt.api_key,
             settings=OpenAISTTSettings(model=user_config.stt.model),
+            should_interrupt=False,  # Let UserAggregator own interruption confirmation.
             **kwargs,
         )
     elif user_config.stt.provider == ServiceProviders.GOOGLE.value:
@@ -186,13 +218,48 @@ def create_stt_service(
             sample_rate=audio_config.transport_in_sample_rate,
         )
     elif user_config.stt.provider == ServiceProviders.CARTESIA.value:
+        if user_config.stt.model == "ink-2":
+            return CartesiaTurnsSTTService(
+                api_key=user_config.stt.api_key,
+                should_interrupt=False,  # Let UserAggregator emit interruption frames.
+                sample_rate=audio_config.transport_in_sample_rate,
+            )
+
+        language = getattr(user_config.stt, "language", None) or "en"
         return CartesiaSTTService(
             api_key=user_config.stt.api_key,
+            settings=CartesiaSTTSettings(
+                model=user_config.stt.model,
+                language=language,
+            ),
             sample_rate=audio_config.transport_in_sample_rate,
         )
     elif user_config.stt.provider == ServiceProviders.DOGRAH.value:
         base_url = MPS_API_URL.replace("http://", "ws://").replace("https://", "wss://")
         language = getattr(user_config.stt, "language", None) or "multi"
+
+        if dograh_stt_uses_flux_language(language):
+            # Dograh's Flux proxy only supports multilingual auto-detect and the
+            # same language hint subset as Deepgram Flux multilingual.
+            settings_kwargs = {
+                "model": "flux-general-multi",
+                "eot_timeout_ms": 3000,
+                "eot_threshold": 0.7,
+                "eager_eot_threshold": 0.5,
+                "keyterm": keyterms or [],
+            }
+            language_hint = DEEPGRAM_FLUX_LANGUAGE_HINTS.get(language)
+            if language_hint:
+                settings_kwargs["language_hints"] = [language_hint]
+            return DograhFluxSTTService(
+                base_url=base_url,
+                api_key=user_config.stt.api_key,
+                correlation_id=correlation_id,
+                settings=DeepgramFluxSTTSettings(**settings_kwargs),
+                should_interrupt=False,  # external turn strategies own interruption
+                sample_rate=audio_config.transport_in_sample_rate,
+            )
+
         return DograhSTTService(
             base_url=base_url,
             api_key=user_config.stt.api_key,
@@ -679,6 +746,19 @@ def create_tts_service(
         )
 
 
+def _migrate_deprecated_google_model(model: str) -> str:
+    """Google removed the ``gemini-2.0-flash*`` models. Transparently upgrade
+    any stored config that still references them to the 2.5 equivalent so old
+    user configurations keep working instead of failing at runtime."""
+    if model and model.startswith("gemini-2.0-flash"):
+        migrated = model.replace("gemini-2.0-", "gemini-2.5-", 1)
+        logger.warning(
+            f"Google model '{model}' is no longer supported; using '{migrated}' instead"
+        )
+        return migrated
+    return model
+
+
 def create_llm_service_from_provider(
     provider: str,
     model: str,
@@ -736,12 +816,13 @@ def create_llm_service_from_provider(
             **kwargs,
         )
     elif provider == ServiceProviders.GOOGLE.value:
-        return GoogleLLMService(
+        model = _migrate_deprecated_google_model(model)
+        return DograhGoogleLLMService(
             api_key=api_key,
             settings=GoogleLLMSettings(model=model, temperature=0.1),
         )
     elif provider == ServiceProviders.GOOGLE_VERTEX.value:
-        return GoogleVertexLLMService(
+        return DograhGoogleVertexLLMService(
             credentials=credentials,
             project_id=project_id,
             location=location or "us-east4",

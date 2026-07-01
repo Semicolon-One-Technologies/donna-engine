@@ -14,7 +14,12 @@ from api.services.configuration.options import (
     AZURE_SPEECH_STT_LANGUAGES,
     AZURE_SPEECH_TTS_LANGUAGES,
     AZURE_SPEECH_TTS_VOICES,
+    CARTESIA_INK_2_STT_LANGUAGES,
+    CARTESIA_INK_WHISPER_STT_LANGUAGES,
+    CARTESIA_STT_LANGUAGES,
+    CARTESIA_STT_MODELS,
     DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGE_OPTIONS,
+    DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGES,
     DEEPGRAM_LANGUAGES,
     DEEPGRAM_STT_MODELS,
     GLADIA_STT_LANGUAGES,
@@ -315,7 +320,6 @@ OPENROUTER_MODELS = [
     "openai/gpt-4.1-mini",
     "anthropic/claude-sonnet-4",
     "google/gemini-2.5-flash",
-    "google/gemini-2.0-flash",
     "meta-llama/llama-3.3-70b-instruct",
     "deepseek/deepseek-chat-v3-0324",
 ]
@@ -350,7 +354,7 @@ class GoogleLLMService(BaseLLMConfiguration):
     model_config = GOOGLE_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.GOOGLE] = ServiceProviders.GOOGLE
     model: str = Field(
-        default="gemini-2.0-flash",
+        default="gemini-2.5-flash",
         description="Gemini model on Google AI Studio (not Vertex).",
         json_schema_extra={"examples": GOOGLE_MODELS, "allow_custom_input": True},
     )
@@ -1323,9 +1327,6 @@ class DeepgramSTTConfiguration(BaseSTTConfiguration):
     )
 
 
-CARTESIA_STT_MODELS = ["ink-whisper"]
-
-
 @register_stt
 class CartesiaSTTConfiguration(BaseSTTConfiguration):
     model_config = CARTESIA_PROVIDER_MODEL_CONFIG
@@ -1334,6 +1335,17 @@ class CartesiaSTTConfiguration(BaseSTTConfiguration):
         default="ink-whisper",
         description="Cartesia STT model.",
         json_schema_extra={"examples": CARTESIA_STT_MODELS},
+    )
+    language: str = Field(
+        default="en",
+        description="ISO 639-1 language code. ink-2 currently supports English only.",
+        json_schema_extra={
+            "examples": CARTESIA_STT_LANGUAGES,
+            "model_options": {
+                "ink-2": CARTESIA_INK_2_STT_LANGUAGES,
+                "ink-whisper": CARTESIA_INK_WHISPER_STT_LANGUAGES,
+            },
+        },
     )
 
 
@@ -1397,6 +1409,10 @@ class GoogleSTTConfiguration(BaseSTTConfiguration):
 # Dograh STT Service
 DOGRAH_STT_MODELS = ["default"]
 DOGRAH_STT_LANGUAGES = DEEPGRAM_LANGUAGES
+# Languages auto-detected when the Dograh STT language is "multi". Dograh STT runs
+# Deepgram Flux multilingual under the hood, which only auto-detects this subset —
+# not the full DOGRAH_STT_LANGUAGES list offered for explicit single-language selection.
+DOGRAH_MULTILINGUAL_AUTODETECT_LANGUAGES = DEEPGRAM_FLUX_MULTILINGUAL_LANGUAGES
 
 
 @register_stt
@@ -1722,7 +1738,7 @@ class AzureOpenAIEmbeddingsConfiguration(BaseEmbeddingsConfiguration):
     )
 
 
-DOGRAH_EMBEDDING_MODELS = ["default"]
+DOGRAH_EMBEDDING_MODELS = ["dograh_embedding_v1"]
 
 
 @register_embeddings
@@ -1730,7 +1746,7 @@ class DograhEmbeddingsConfiguration(BaseEmbeddingsConfiguration):
     model_config = DOGRAH_PROVIDER_MODEL_CONFIG
     provider: Literal[ServiceProviders.DOGRAH] = ServiceProviders.DOGRAH
     model: str = Field(
-        default="default",
+        default="dograh_embedding_v1",
         description="Dograh-managed embedding model.",
         json_schema_extra={"examples": DOGRAH_EMBEDDING_MODELS},
     )
