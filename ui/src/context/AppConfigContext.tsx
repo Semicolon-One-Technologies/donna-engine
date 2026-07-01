@@ -22,6 +22,7 @@ interface AppConfig {
     // runs on one. null until /health is reached. Used to resolve the API client
     // base URL; distinct from tunnelUrl, which is only for external consumers.
     backendApiEndpoint: string | null;
+    disableSignup: boolean;
     backendStatus: BackendStatus;
     backendUrl: string;
     backendMessage: string | null;
@@ -40,6 +41,7 @@ const defaultConfig: AppConfig = {
     authProvider: 'local',
     turnEnabled: false,
     forceTurnRelay: false,
+    disableSignup: false,
     tunnelUrl: null,
     backendApiEndpoint: null,
     backendStatus: 'unreachable',
@@ -94,6 +96,7 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
                 forceTurnRelay: Boolean(data.forceTurnRelay),
                 tunnelUrl: typeof data.tunnelUrl === 'string' ? data.tunnelUrl : null,
                 backendApiEndpoint,
+                disableSignup: Boolean(data.disableSignup),
                 backendStatus,
                 backendUrl,
                 backendMessage: typeof backend.message === 'string' && backend.message.length > 0

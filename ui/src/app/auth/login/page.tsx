@@ -10,8 +10,10 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 export default function LoginPage() {
+  const { config } = useAppConfig();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -83,12 +85,14 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/auth/signup" className="text-primary underline-offset-4 hover:underline">
-          Sign up
-        </Link>
-      </p>
+      {!config?.disableSignup && (
+        <p className="text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/auth/signup" className="text-primary underline-offset-4 hover:underline">
+            Sign up
+          </Link>
+        </p>
+      )}
     </AuthShell>
   );
 }

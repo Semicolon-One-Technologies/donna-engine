@@ -20,6 +20,13 @@ router = APIRouter(
 
 @router.post("/signup", response_model=AuthResponse)
 async def signup(request: SignupRequest):
+    from api.constants import DISABLE_SIGNUP
+
+    if DISABLE_SIGNUP:
+        raise HTTPException(
+            status_code=403, detail="Signups are disabled on this instance"
+        )
+
     # Check if email is already taken
     existing_user = await db_client.get_user_by_email(request.email)
     if existing_user:

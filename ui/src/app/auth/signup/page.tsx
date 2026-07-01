@@ -10,8 +10,10 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAppConfig } from "@/context/AppConfigContext";
 
 export default function SignupPage() {
+  const { config } = useAppConfig();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -57,6 +59,22 @@ export default function SignupPage() {
       setLoading(false);
     }
   };
+
+  if (config?.disableSignup) {
+    return (
+      <AuthShell enterpriseSlot={<AuthEnterpriseCTA />}>
+        <div className="space-y-3 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">Signup Disabled</h1>
+          <p className="text-sm text-muted-foreground">
+            User signups are disabled on this instance. Please contact your administrator.
+          </p>
+          <Button asChild className="w-full mt-4">
+            <Link href="/auth/login">Back to Sign In</Link>
+          </Button>
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell enterpriseSlot={<AuthEnterpriseCTA />}>
