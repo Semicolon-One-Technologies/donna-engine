@@ -272,6 +272,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AmbientNoiseConfigurationDefaults */
+        AmbientNoiseConfigurationDefaults: {
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Volume
+             * @default 0.3
+             */
+            volume: number;
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * CalculatorToolDefinition
          * @description Tool definition for Calculator tools.
@@ -296,6 +311,34 @@ export interface components {
              * @default []
              */
             disposition_codes: string[];
+        };
+        /**
+         * ContextDestinationMappingConfig
+         * @description Resolve an external-PBX destination from gathered context.
+         */
+        ContextDestinationMappingConfig: {
+            /**
+             * Context Path
+             * @description Gathered-context path or extracted-variable name used for routing.
+             */
+            context_path: string;
+            /** Routes */
+            routes: components["schemas"]["ContextDestinationRoute"][];
+            /**
+             * Fallback Destination
+             * @description Optional provider-native fallback destination.
+             */
+            fallback_destination?: string | null;
+        };
+        /**
+         * ContextDestinationRoute
+         * @description Map one gathered-context value to an external-PBX destination.
+         */
+        ContextDestinationRoute: {
+            /** Context Value */
+            context_value: string;
+            /** Destination */
+            destination: string;
         };
         /**
          * CreateToolRequest
@@ -524,6 +567,16 @@ export interface components {
             config: components["schemas"]["EndCallConfig"];
         };
         /**
+         * ExternalPBXFieldMapping
+         * @description Map one gathered-context value to a provider-native field.
+         */
+        ExternalPBXFieldMapping: {
+            /** Context Path */
+            context_path: string;
+            /** Destination Field */
+            destination_field: string;
+        };
+        /**
          * GraphConstraints
          * @description Per-node-type graph rules. WorkflowGraph enforces these at validation.
          */
@@ -624,6 +677,57 @@ export interface components {
             type: "http_api";
             /** @description HTTP API configuration. */
             config: components["schemas"]["HttpApiConfig"];
+        };
+        /**
+         * HttpTransferResolverConfig
+         * @description HTTP endpoint used to resolve transfer destination at call time.
+         */
+        HttpTransferResolverConfig: {
+            /**
+             * Type
+             * @description Resolver type.
+             * @default http
+             * @constant
+             */
+            type: "http";
+            /**
+             * Url
+             * @description HTTP or HTTPS endpoint for transfer resolution.
+             */
+            url: string;
+            /**
+             * Headers
+             * @description Static headers to include with every resolver request.
+             */
+            headers?: {
+                [key: string]: string;
+            } | null;
+            /**
+             * Credential Uuid
+             * @description Reference to an external credential for resolver authentication.
+             */
+            credential_uuid?: string | null;
+            /**
+             * Timeout Ms
+             * @description Resolver request timeout in milliseconds.
+             * @default 3000
+             */
+            timeout_ms: number;
+            /**
+             * Wait Message
+             * @description Optional short message played while Dograh resolves routing.
+             */
+            wait_message?: string | null;
+            /**
+             * Parameters
+             * @description Parameters the model may provide when calling this transfer tool.
+             */
+            parameters?: components["schemas"]["ToolParameter"][] | null;
+            /**
+             * Preset Parameters
+             * @description Parameters injected by Dograh from fixed values or workflow context templates.
+             */
+            preset_parameters?: components["schemas"]["PresetToolParameter"][] | null;
         };
         /** InitiateCallRequest */
         InitiateCallRequest: {
@@ -743,6 +847,11 @@ export interface components {
              * @description LLM-only guidance; omitted from the UI.
              */
             llm_hint?: string | null;
+            /**
+             * Docs Url
+             * @description Documentation URL shown in the node editor.
+             */
+            docs_url?: string | null;
             category: components["schemas"]["NodeCategory"];
             /** Icon */
             icon: string;
@@ -1020,8 +1129,16 @@ export interface components {
          */
         TransferCallConfig: {
             /**
+             * Destination Source
+             * @description Whether the destination is static/template, resolved by HTTP, or mapped from gathered context to an external-PBX destination.
+             * @default static
+             * @enum {string}
+             */
+            destination_source: "static" | "dynamic" | "context_mapping";
+            /**
              * Destination
              * @description Phone number, SIP endpoint, or template to transfer the call to, e.g. +1234567890, PJSIP/1234, or {{initial_context.transfer_destination}}.
+             * @default
              */
             destination: string;
             /**
@@ -1047,6 +1164,15 @@ export interface components {
              * @default 30
              */
             timeout: number;
+            /**
+             * Parameters
+             * @description Parameters the model may provide when calling this transfer tool, for example state, department, or transfer reason.
+             */
+            parameters?: components["schemas"]["ToolParameter"][] | null;
+            /** @description Optional resolver that determines transfer routing at call time. */
+            resolver?: components["schemas"]["HttpTransferResolverConfig"] | null;
+            /** @description Optional gathered-context to external-PBX destination mapping. */
+            context_mapping?: components["schemas"]["ContextDestinationMappingConfig"] | null;
         };
         /**
          * TransferCallToolDefinition
@@ -1079,10 +1205,7 @@ export interface components {
             template_context_variables?: {
                 [key: string]: unknown;
             } | null;
-            /** Workflow Configurations */
-            workflow_configurations?: {
-                [key: string]: unknown;
-            } | null;
+            workflow_configurations?: components["schemas"]["WorkflowConfigurationDefaults"] | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1096,6 +1219,61 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WorkflowConfigurationDefaults */
+        WorkflowConfigurationDefaults: {
+            ambient_noise_configuration?: components["schemas"]["AmbientNoiseConfigurationDefaults"];
+            /**
+             * Max Call Duration
+             * @default 300
+             */
+            max_call_duration: number;
+            /**
+             * Max User Idle Timeout
+             * @default 10
+             */
+            max_user_idle_timeout: number;
+            /**
+             * Smart Turn Stop Secs
+             * @default 2
+             */
+            smart_turn_stop_secs: number;
+            /**
+             * Turn Start Strategy
+             * @default default
+             * @enum {string}
+             */
+            turn_start_strategy: "default" | "min_words" | "provisional_vad";
+            /**
+             * Turn Start Min Words
+             * @default 3
+             */
+            turn_start_min_words: number;
+            /**
+             * Provisional Vad Pause Secs
+             * @default 1.5
+             */
+            provisional_vad_pause_secs: number;
+            /**
+             * Turn Stop Strategy
+             * @default transcription
+             * @enum {string}
+             */
+            turn_stop_strategy: "transcription" | "turn_analyzer";
+            /**
+             * Dictionary
+             * @default
+             */
+            dictionary: string;
+            /**
+             * Context Compaction Enabled
+             * @default false
+             */
+            context_compaction_enabled: boolean;
+            /** External Pbx Field Mappings */
+            external_pbx_field_mappings?: components["schemas"]["ExternalPBXFieldMapping"][];
+        } & {
+            [key: string]: unknown;
         };
         /**
          * WorkflowListResponse
@@ -1164,8 +1342,11 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type AmbientNoiseConfigurationDefaults = components['schemas']['AmbientNoiseConfigurationDefaults'];
 export type CalculatorToolDefinition = components['schemas']['CalculatorToolDefinition'];
 export type CallDispositionCodes = components['schemas']['CallDispositionCodes'];
+export type ContextDestinationMappingConfig = components['schemas']['ContextDestinationMappingConfig'];
+export type ContextDestinationRoute = components['schemas']['ContextDestinationRoute'];
 export type CreateToolRequest = components['schemas']['CreateToolRequest'];
 export type CreateWorkflowRequest = components['schemas']['CreateWorkflowRequest'];
 export type CreatedByResponse = components['schemas']['CreatedByResponse'];
@@ -1175,10 +1356,12 @@ export type DocumentListResponseSchema = components['schemas']['DocumentListResp
 export type DocumentResponseSchema = components['schemas']['DocumentResponseSchema'];
 export type EndCallConfig = components['schemas']['EndCallConfig'];
 export type EndCallToolDefinition = components['schemas']['EndCallToolDefinition'];
+export type ExternalPbxFieldMapping = components['schemas']['ExternalPBXFieldMapping'];
 export type GraphConstraints = components['schemas']['GraphConstraints'];
 export type HttpValidationError = components['schemas']['HTTPValidationError'];
 export type HttpApiConfig = components['schemas']['HttpApiConfig'];
 export type HttpApiToolDefinition = components['schemas']['HttpApiToolDefinition'];
+export type HttpTransferResolverConfig = components['schemas']['HttpTransferResolverConfig'];
 export type InitiateCallRequest = components['schemas']['InitiateCallRequest'];
 export type McpToolConfig = components['schemas']['McpToolConfig'];
 export type McpToolDefinition = components['schemas']['McpToolDefinition'];
@@ -1201,6 +1384,7 @@ export type TransferCallConfig = components['schemas']['TransferCallConfig'];
 export type TransferCallToolDefinition = components['schemas']['TransferCallToolDefinition'];
 export type UpdateWorkflowRequest = components['schemas']['UpdateWorkflowRequest'];
 export type ValidationError = components['schemas']['ValidationError'];
+export type WorkflowConfigurationDefaults = components['schemas']['WorkflowConfigurationDefaults'];
 export type WorkflowListResponse = components['schemas']['WorkflowListResponse'];
 export type WorkflowResponse = components['schemas']['WorkflowResponse'];
 export type $defs = Record<string, never>;

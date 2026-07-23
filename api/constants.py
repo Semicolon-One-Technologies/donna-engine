@@ -46,6 +46,7 @@ CORS_ALLOWED_ORIGINS = [
     o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
 ]
 AUTH_PROVIDER = os.getenv("AUTH_PROVIDER", "local")
+ENABLE_SIGNUP = os.getenv("ENABLE_SIGNUP", "true").lower() == "true"
 # Stack Auth public client config. These are safe to expose to the browser (the
 # publishable client key is public by design, and the project id is non-sensitive),
 # and are served to the UI at runtime via /api/v1/health so the frontend no longer
@@ -150,7 +151,11 @@ COUNTRY_CODES = {
     "IE": "353",  # Ireland
 }
 
-DEFAULT_ORG_CONCURRENCY_LIMIT = os.getenv("DEFAULT_ORG_CONCURRENCY_LIMIT", 2)
+# Floor at 1 so a misconfigured env var (0 or negative) can't silently block
+# every call in the deployment.
+DEFAULT_ORG_CONCURRENCY_LIMIT = max(
+    1, int(os.getenv("DEFAULT_ORG_CONCURRENCY_LIMIT", "10"))
+)
 DEFAULT_CAMPAIGN_RETRY_CONFIG = {
     "enabled": True,
     "max_retries": 1,
