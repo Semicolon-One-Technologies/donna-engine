@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 
-from api.constants import DISABLE_SIGNUP, ENABLE_SIGNUP
+from api.constants import ENABLE_SIGNUP
 from api.db import db_client
 from api.db.models import UserModel
 from api.enums import OrganizationConfigurationKey, PostHogEvent
@@ -29,7 +29,7 @@ router = APIRouter(
     dependencies=[Depends(require_local_auth)],
 )
 async def signup(request: SignupRequest):
-    if DISABLE_SIGNUP or not ENABLE_SIGNUP:
+    if not ENABLE_SIGNUP:
         raise HTTPException(status_code=403, detail="Signup is disabled")
 
     # Check if email is already taken
