@@ -57,8 +57,11 @@ import {
 } from "@/components/ui/table";
 import { useAppConfig } from "@/context/AppConfigContext";
 import { useOrgConfig } from "@/context/OrgConfigContext";
+import { useOrganizationTimezone } from "@/hooks/useOrganizationTimezone";
 import { detailFromError } from "@/lib/apiError";
 import { useAuth } from "@/lib/auth";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { formatDateTime } from "@/lib/dateTime";
 import { resolveWebhookBaseUrl } from "@/lib/webhookUrl";
 
 const INBOUND_WEBHOOK_PATH = "/api/v1/telephony/inbound/run";
@@ -71,6 +74,7 @@ export default function TelephonyConfigurationDetailPage() {
   const { user, getAccessToken, loading: authLoading } = useAuth();
   const { config: appConfig } = useAppConfig();
   const { externalPbxIntegrationsEnabled } = useOrgConfig();
+  const organizationTimezone = useOrganizationTimezone();
   const inboundWebhookUrl = `${resolveWebhookBaseUrl(appConfig?.tunnelUrl)}${INBOUND_WEBHOOK_PATH}`;
   const [config, setConfig] = useState<TelephonyConfigurationDetail | null>(null);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumberResponse[]>([]);
@@ -220,13 +224,12 @@ export default function TelephonyConfigurationDetailPage() {
               )}
             </div>
             <CardDescription>
-              Updated {new Date(config.updated_at).toLocaleString()}
+              Updated {formatDateTime(config.updated_at, organizationTimezone)}
             </CardDescription>
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard
-                  .writeText(String(config.id))
+                copyTextToClipboard(String(config.id))
                   .then(() => toast.success("Configuration ID copied"))
                   .catch(() => toast.error("Failed to copy ID"));
               }}
@@ -267,8 +270,7 @@ export default function TelephonyConfigurationDetailPage() {
               type="button"
               onClick={() => {
                 const url = inboundWebhookUrl;
-                navigator.clipboard
-                  .writeText(url)
+                copyTextToClipboard(url)
                   .then(() => toast.success("Inbound webhook URL copied"))
                   .catch(() => toast.error("Failed to copy URL"));
               }}
