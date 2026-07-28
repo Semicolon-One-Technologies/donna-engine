@@ -56,7 +56,7 @@ export async function GET() {
       authProvider = data.auth_provider;
       turnEnabled = Boolean(data.turn_enabled);
       forceTurnRelay = Boolean(data.force_turn_relay);
-      disableSignup = Boolean((data as any).disable_signup);
+      disableSignup = Boolean((data as Record<string, unknown>).disable_signup);
       tunnelUrl = data.tunnel_url ?? null;
       backendApiEndpoint =
         typeof data.backend_api_endpoint === "string" &&

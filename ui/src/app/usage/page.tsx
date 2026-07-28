@@ -6,8 +6,8 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import TimezoneSelect, { type ITimezoneOption } from 'react-timezone-select';
 import { toast } from 'sonner';
 
-import { downloadUsageRunsReportApiV1OrganizationsUsageRunsReportGet, getDailyUsageBreakdownApiV1OrganizationsUsageDailyBreakdownGet, getMpsCreditsApiV1OrganizationsUsageMpsCreditsGet, getPreferencesApiV1OrganizationsPreferencesGet, getUsageHistoryApiV1OrganizationsUsageRunsGet, getWorkflowsSummaryApiV1WorkflowSummaryGet, savePreferencesApiV1OrganizationsPreferencesPut } from '@/client/sdk.gen';
-import type { DailyUsageBreakdownResponse, MpsCreditsResponse, OrganizationPreferences, UsageHistoryResponse, WorkflowRunUsageResponse, WorkflowSummaryResponse } from '@/client/types.gen';
+import { downloadUsageRunsReportApiV1OrganizationsUsageRunsReportGet, getBillingCreditsApiV1OrganizationsBillingCreditsGet, getDailyUsageBreakdownApiV1OrganizationsUsageDailyBreakdownGet, getPreferencesApiV1OrganizationsPreferencesGet, getUsageHistoryApiV1OrganizationsUsageRunsGet, getWorkflowsSummaryApiV1WorkflowSummaryGet, savePreferencesApiV1OrganizationsPreferencesPut } from '@/client/sdk.gen';
+import type { DailyUsageBreakdownResponse, MpsBillingCreditsResponse, OrganizationPreferences, UsageHistoryResponse, WorkflowRunUsageResponse, WorkflowSummaryResponse } from '@/client/types.gen';
 import { CallTypeCell } from '@/components/CallTypeCell';
 import { DailyUsageTable } from '@/components/DailyUsageTable';
 import { FilterBuilder } from '@/components/filters/FilterBuilder';
@@ -87,7 +87,7 @@ export default function UsagePage() {
     const [isLoadingDaily, setIsLoadingDaily] = useState(false);
 
     // Donna Engine model credits (MPS) state
-    const [mpsCredits, setMpsCredits] = useState<MpsCreditsResponse | null>(null);
+    const [mpsCredits, setMpsCredits] = useState<MpsBillingCreditsResponse | null>(null);
     const [isLoadingCredits, setIsLoadingCredits] = useState(true);
 
     // Initialize filters from URL. `activeFilters` tracks the in-progress
@@ -192,7 +192,7 @@ export default function UsagePage() {
     const fetchMpsCredits = useCallback(async () => {
         if (!auth.isAuthenticated) return;
         try {
-            const response = await getMpsCreditsApiV1OrganizationsUsageMpsCreditsGet();
+            const response = await getBillingCreditsApiV1OrganizationsBillingCreditsGet();
             if (response.data) {
                 setMpsCredits(response.data);
             }
@@ -525,18 +525,18 @@ export default function UsagePage() {
                                 <div className="flex justify-between items-baseline">
                                     <div>
                                         <p className="text-2xl font-bold">
-                                            {mpsCredits.total_credits_used.toFixed(2)} <span className="text-lg font-normal text-muted-foreground">/ {mpsCredits.total_quota.toFixed(2)}</span>
+                                            {(mpsCredits.total_credits_used ?? 0).toFixed(2)} <span className="text-lg font-normal text-muted-foreground">/ {(mpsCredits.total_quota ?? 0).toFixed(2)}</span>
                                         </p>
                                         <p className="text-sm text-muted-foreground">Credits Used</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-lg font-semibold">{mpsCredits.remaining_credits.toFixed(2)}</p>
+                                        <p className="text-lg font-semibold">{(mpsCredits.remaining_credits ?? 0).toFixed(2)}</p>
                                         <p className="text-sm text-muted-foreground">Remaining</p>
                                     </div>
                                 </div>
 
-                                {mpsCredits.total_quota > 0 && (
-                                    <Progress value={(mpsCredits.total_credits_used / mpsCredits.total_quota) * 100} className="h-3" />
+                                {(mpsCredits.total_quota ?? 0) > 0 && (
+                                    <Progress value={((mpsCredits.total_credits_used ?? 0) / (mpsCredits.total_quota ?? 1)) * 100} className="h-3" />
                                 )}
                             </div>
                         ) : (
