@@ -23,7 +23,9 @@ from api.services.telephony.factory import (
     get_default_telephony_provider,
     get_telephony_provider_by_id,
 )
+from api.services.workflow.initial_context import merge_external_initial_context
 from api.services.workflow.run_creation import prepare_workflow_run_inputs
+from api.services.workflow_run_failure import mark_workflow_run_failed
 from api.utils.common import get_backend_endpoints
 
 router = APIRouter(prefix="/public/agent")
@@ -35,6 +37,8 @@ class TriggerCallRequest(BaseModel):
     phone_number: str
     initial_context: Optional[dict] = None
     telephony_configuration_id: int | None = None
+    # Optional active caller ID in the resolved telephony configuration.
+    from_phone_number_id: int | None = None
 
 
 class TriggerCallResponse(BaseModel):
@@ -225,6 +229,16 @@ async def _execute_resolved_target(
             detail="Telephony provider not configured for this organization",
         )
 
+    # Resolve an explicit caller ID within the selected configuration.
+    from_number: str | None = None
+    if request.from_phone_number_id is not None:
+        phone_row = await db_client.get_phone_number_for_config(
+            request.from_phone_number_id, resolved_cfg_id
+        )
+        if not phone_row or not phone_row.is_active:
+            raise HTTPException(status_code=400, detail="from_phone_number_not_found")
+        from_number = phone_row.address_normalized
+
     # 7. Determine the workflow run mode based on provider type
     workflow_run_mode = provider.PROVIDER_NAME
 
@@ -233,6 +247,7 @@ async def _execute_resolved_target(
     workflow_run_name = f"WR-{mode_label}-{random.randint(1000, 9999)}"
     initial_context = {
         "provider": provider.PROVIDER_NAME,
+        "direction": "outbound",
         "phone_number": request.phone_number,
         "trigger_mode": "test" if use_draft else "production",
         "telephony_configuration_id": resolved_cfg_id,
@@ -240,13 +255,20 @@ async def _execute_resolved_target(
         "agent_identifier_type": target.identifier_type,
         "workflow_uuid": target.workflow.workflow_uuid,
     }
+    if request.from_phone_number_id is not None:
+        initial_context["from_phone_number_id"] = request.from_phone_number_id
     if target.identifier_type == "trigger_path":
         initial_context["agent_uuid"] = target.identifier_value
     if api_key_id is not None:
         initial_context["api_key_id"] = api_key_id
     if api_key_created_by is not None:
         initial_context["api_key_created_by"] = api_key_created_by
-    initial_context.update(request.initial_context or {})
+    initial_context = merge_external_initial_context(
+        initial_context, request.initial_context
+    )
+    # The destination describes the actual call and must not be overridden by
+    # caller-supplied context.
+    initial_context["called_number"] = request.phone_number
 
     try:
         concurrency_slot = await call_concurrency.acquire_org_slot(
@@ -297,6 +319,9 @@ async def _execute_resolved_target(
         workflow_run_id=workflow_run.id,
     )
     if not quota_result.has_quota:
+        await mark_workflow_run_failed(
+            workflow_run.id, quota_result.error_message or "Quota exceeded"
+        )
         await call_concurrency.release_workflow_run_slot(workflow_run.id)
         raise HTTPException(status_code=402, detail=quota_result.error_message)
 
@@ -324,6 +349,7 @@ async def _execute_resolved_target(
             to_number=request.phone_number,
             webhook_url=webhook_url,
             workflow_run_id=workflow_run.id,
+            from_number=from_number,
             workflow_id=target.workflow.id,
             organization_id=target.organization_id,
         )
@@ -331,6 +357,7 @@ async def _execute_resolved_target(
         logger.warning(
             f"Failed to initiate call for workflow run {workflow_run.id}: {e}"
         )
+        await mark_workflow_run_failed(workflow_run.id, f"Failed to initiate call: {e}")
         await call_concurrency.release_workflow_run_slot(workflow_run.id)
         raise HTTPException(
             status_code=400,
@@ -345,15 +372,20 @@ async def _execute_resolved_target(
     if target.identifier_type == "trigger_path":
         gathered_context["trigger_uuid"] = target.identifier_value
 
+    telephony_context = {"called_number": request.phone_number}
+    if result.caller_number:
+        telephony_context["caller_number"] = result.caller_number
+
     try:
         await db_client.update_workflow_run(
             run_id=workflow_run.id,
             gathered_context=gathered_context,
+            initial_context=telephony_context,
         )
     except Exception as e:
         logger.warning(
             f"Call initiated for workflow run {workflow_run.id}, but failed to "
-            f"persist provider metadata: {e}"
+            f"persist call metadata and telephony context: {e}"
         )
 
     logger.info(

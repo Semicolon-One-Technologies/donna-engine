@@ -4,6 +4,7 @@ This allows easy switching between different providers (Twilio, Vonage, etc.)
 while keeping business logic decoupled from specific implementations.
 """
 
+import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
@@ -40,6 +41,44 @@ class ProviderSyncResult:
     message: Optional[str] = None  # human-readable detail when ok=False
 
 
+@dataclass(frozen=True)
+class SIPTransportDetails:
+    """Connection details for one supported inbound SIP transport."""
+
+    transport: str
+    hostname: str
+    port: int
+    uri: str
+
+
+@dataclass(frozen=True)
+class SIPRegionDetails:
+    """Inbound and outbound SIP details for one provider region."""
+
+    region: str
+    inbound_transports: list[SIPTransportDetails]
+    outbound_origin_ip: str
+
+
+@dataclass(frozen=True)
+class SIPConnectivityDetails:
+    """Provider-supplied SIP connection details displayed to customers."""
+
+    provider_display_name: str
+    regions: list[SIPRegionDetails]
+
+
+class ProviderPhoneNumberLookupError(Exception):
+    """The provider could not determine whether it owns a phone number.
+
+    This is distinct from a successful lookup that reports ``ok=False``. The
+    latter means the address is definitely absent from the provider account;
+    this exception means credentials, transport, or the upstream API failed,
+    so callers should surface a provider error instead of treating the number
+    as unowned.
+    """
+
+
 @dataclass
 class NormalizedInboundData:
     """Standardized inbound call data across all providers."""
@@ -74,6 +113,28 @@ class TelephonyProvider(ABC):
     PROVIDER_NAME = None
     WEBHOOK_ENDPOINT = None
 
+    # Populated by provider constructors from the factory-normalized config.
+    from_numbers: List[str] = []
+    default_from_number: Optional[str] = None
+
+    def select_from_number(self, from_number: Optional[str] = None) -> Optional[str]:
+        """Resolve the caller ID for a one-off outbound call.
+
+        Preference order: explicit ``from_number`` > the configuration's
+        default caller ID > random pick from the pool. Callers that want
+        rotation across the pool (e.g. the campaign dispatcher) must pass an
+        explicit ``from_number`` — the default caller ID only applies when no
+        number was requested. Returns None when the pool is empty and no
+        default is set.
+        """
+        if from_number:
+            return from_number
+        if self.default_from_number:
+            return self.default_from_number
+        if self.from_numbers:
+            return random.choice(self.from_numbers)
+        return None
+
     @abstractmethod
     async def initiate_call(
         self,
@@ -90,7 +151,9 @@ class TelephonyProvider(ABC):
             to_number: The destination phone number
             webhook_url: The URL to receive call events
             workflow_run_id: Optional workflow run ID for tracking
-            from_number: Optional caller ID to use. If None, provider selects randomly.
+            from_number: Optional caller ID to use. If None, the config's
+                default caller ID is used when set, else one is selected
+                randomly from the pool.
             **kwargs: Provider-specific additional parameters
 
         Returns:
@@ -217,6 +280,15 @@ class TelephonyProvider(ABC):
         self, data: Dict[str, Any]
     ) -> Optional[AnsweringMachineDetectionResult]:
         """Parse provider-specific callback data into a normalized AMD result."""
+        return None
+
+    def get_sip_connectivity_details(self) -> SIPConnectivityDetails | None:
+        """Return inbound SIP trunk details when this provider supports them.
+
+        Providers opt in by overriding this method. Keeping the default empty
+        lets the configuration UI render the SIP panel generically without a
+        hard-coded list of capable providers.
+        """
         return None
 
     @abstractmethod
@@ -388,6 +460,26 @@ class TelephonyProvider(ABC):
         don't support programmatic webhook configuration (e.g. ARI).
         """
         return ProviderSyncResult(ok=True)
+
+    async def provision_phone_number(self, address: str) -> ProviderSyncResult | None:
+        """Provision ``address`` at the provider before storing it locally.
+
+        The default ``None`` means the provider does not support provisioning,
+        so the shared route falls back to the read-only ownership validation
+        below. Providers that opt in must make this operation idempotent.
+        """
+        return None
+
+    @abstractmethod
+    async def validate_phone_number(self, address: str) -> ProviderSyncResult:
+        """Check that ``address`` belongs to this provider configuration.
+
+        Carrier-backed providers implement a read-only account-inventory
+        lookup. PBX-managed providers without a carrier ownership resource
+        must explicitly opt out so a newly registered provider cannot silently
+        bypass validation.
+        """
+        raise NotImplementedError
 
     @staticmethod
     @abstractmethod
