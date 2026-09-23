@@ -462,6 +462,13 @@ dograh_sync_postgres_password() {
 dograh_prepare_remote_install() {
     local project_dir=${1:-$(dograh_project_dir)}
     local env_file="$project_dir/.env"
+    local compose_file="$project_dir/docker-compose.yaml"
+
+    if [[ -f "$compose_file" ]] && grep -q "minio/minio" "$compose_file" 2>/dev/null; then
+        dograh_info "Migrating MinIO image in docker-compose.yaml to quay.io/minio/minio..."
+        sed 's|image:[[:space:]]*minio/minio|image: quay.io/minio/minio|g' "$compose_file" > "$compose_file.tmp" \
+            && mv "$compose_file.tmp" "$compose_file"
+    fi
 
     dograh_sync_remote_env_file "$env_file"
     dograh_require_init_compose_layout "$project_dir"

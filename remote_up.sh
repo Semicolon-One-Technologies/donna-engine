@@ -61,6 +61,11 @@ done
 
 cd "$SCRIPT_DIR"
 
+if [[ -f "$SCRIPT_DIR/docker-compose.yaml" ]] && grep -q "minio/minio" "$SCRIPT_DIR/docker-compose.yaml" 2>/dev/null; then
+    sed 's|image:[[:space:]]*minio/minio|image: quay.io/minio/minio|g' "$SCRIPT_DIR/docker-compose.yaml" > "$SCRIPT_DIR/docker-compose.yaml.tmp" \
+        && mv "$SCRIPT_DIR/docker-compose.yaml.tmp" "$SCRIPT_DIR/docker-compose.yaml"
+fi
+
 dograh_info "Running Dograh remote preflight..."
 dograh_prepare_remote_install "$SCRIPT_DIR"
 docker compose config -q
