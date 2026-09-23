@@ -567,8 +567,9 @@ dograh_download_bundle_file_for_ref() {
     local destination=$1
     local remote_path=$2
     local ref=${3:-main}
-    local raw_base="https://raw.githubusercontent.com/dograh-hq/dograh/$ref"
-    local fallback_base="https://raw.githubusercontent.com/dograh-hq/dograh/main"
+    local repo=${DOGRAH_REPO:-Semicolon-One-Technologies/donna-engine}
+    local raw_base="https://raw.githubusercontent.com/$repo/$ref"
+    local fallback_base="https://raw.githubusercontent.com/$repo/main"
 
     if ! curl -fsSL -o "$destination" "$raw_base/$remote_path"; then
         dograh_warn "Warning: '$remote_path' not found at '$ref' - falling back to main"
