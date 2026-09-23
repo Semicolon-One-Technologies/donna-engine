@@ -17,6 +17,23 @@ class CallType(Enum):
     OUTBOUND = "outbound"
 
 
+class AnswerAction(str, Enum):
+    # Start speaking after silence, while continuing to supervise the answer.
+    START_OPENING = "start_opening"
+    # Play the workflow opening, then allow normal conversation.
+    RELEASE = "release"
+    # Play the configured voicemail message, then disconnect.
+    LEAVE_MESSAGE = "leave_message"
+    # Disconnect without playing a message.
+    DROP = "drop"
+    # Play the screening introduction, then listen again for the subscriber.
+    SCREEN_THEN_REARM = "screen_then_rearm"
+    # Stop a provisional greeting and wait silently for a screened subscriber.
+    WAIT_FOR_SCREENING = "wait_for_screening"
+    # Stop answer handling because the pipeline has ended.
+    CANCELLED = "cancelled"
+
+
 class TelephonyCallStatus(str, Enum):
     INITIATED = "initiated"
     RINGING = "ringing"
@@ -50,6 +67,7 @@ class WorkflowRunMode(Enum):
     VONAGE = "vonage"
     VOBIZ = "vobiz"
     CLOUDONIX = "cloudonix"
+    EXOTEL = "exotel"
     TELNYX = "telnyx"
     WEBRTC = "webrtc"
     SMALLWEBRTC = "smallwebrtc"
@@ -60,6 +78,45 @@ class WorkflowRunMode(Enum):
     STASIS = "stasis"
     VOICE = "VOICE"
     CHAT = "CHAT"
+
+
+class WorkflowRunChannel(Enum):
+    """How a run reached the agent, coarser than the provider-level mode.
+
+    `WorkflowRunMode` records the specific transport (twilio, telnyx, ...);
+    this groups those into the three channels users think in terms of when
+    filtering their runs.
+    """
+
+    TELEPHONY = "telephony"
+    WEB = "web"
+    CHAT = "chat"
+
+
+# Every WorkflowRunMode belongs to exactly one channel. Historical modes are
+# mapped too, so filtering never silently drops old runs.
+WORKFLOW_RUN_MODES_BY_CHANNEL: dict[str, tuple[str, ...]] = {
+    WorkflowRunChannel.TELEPHONY.value: (
+        WorkflowRunMode.ARI.value,
+        WorkflowRunMode.PLIVO.value,
+        WorkflowRunMode.TWILIO.value,
+        WorkflowRunMode.VONAGE.value,
+        WorkflowRunMode.VOBIZ.value,
+        WorkflowRunMode.CLOUDONIX.value,
+        WorkflowRunMode.EXOTEL.value,
+        WorkflowRunMode.TELNYX.value,
+        WorkflowRunMode.STASIS.value,
+        WorkflowRunMode.VOICE.value,
+    ),
+    WorkflowRunChannel.WEB.value: (
+        WorkflowRunMode.WEBRTC.value,
+        WorkflowRunMode.SMALLWEBRTC.value,
+    ),
+    WorkflowRunChannel.CHAT.value: (
+        WorkflowRunMode.TEXTCHAT.value,
+        WorkflowRunMode.CHAT.value,
+    ),
+}
 
 
 class StorageBackend(Enum):
@@ -172,6 +229,7 @@ class ToolCategory(Enum):
     HTTP_API = "http_api"  # Custom HTTP API calls (implemented)
     END_CALL = "end_call"  # End call tool
     TRANSFER_CALL = "transfer_call"  # Transfer call to phone number (Twilio only)
+    TRANSFER_AGENT = "transfer_agent"  # Hand the live call to another Dograh agent
     CALCULATOR = "calculator"  # Built-in calculator tool
     NATIVE = "native"  # Built-in integrations (future: dtmf_input)
     INTEGRATION = "integration"  # Third-party integrations (future: Google Calendar, Salesforce, etc.)

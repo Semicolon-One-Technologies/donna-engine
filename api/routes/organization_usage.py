@@ -1,22 +1,76 @@
+import asyncio
 import json
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import BaseModel, Field
+from redis.exceptions import RedisError
 
 from api.constants import DEPLOYMENT_MODE, UI_APP_URL
 from api.db import db_client
 from api.db.models import UserModel
 from api.services.auth.depends import get_user, get_user_with_selected_organization
+from api.services.call_concurrency import call_concurrency
 from api.services.mps_service_key_client import mps_service_key_client
 from api.services.reports import generate_usage_runs_report_csv
 from api.utils.artifacts import artifact_url
 from api.utils.recording_artifacts import has_recording_track
 
 router = APIRouter(prefix="/organizations")
+
+
+class OrganizationConcurrentCallsResponse(BaseModel):
+    organization_id: int
+    active_calls: int = Field(
+        ge=0,
+        description=(
+            "Occupied concurrent call slots across all workers, including "
+            "dialing/ringing reservations. Excludes expired slots."
+        ),
+    )
+
+
+@router.get(
+    "/concurrent-calls",
+    response_model=OrganizationConcurrentCallsResponse,
+    responses={
+        401: {"description": "Missing or invalid credentials"},
+        503: {"description": "The current call count is unavailable"},
+    },
+)
+async def get_organization_concurrent_calls(
+    response: Response,
+    user: Annotated[UserModel, Depends(get_user_with_selected_organization)],
+) -> OrganizationConcurrentCallsResponse:
+    """Get your organization's current concurrent call count across all workers.
+
+    Authenticate with X-API-Key; the key determines the organization. Session
+    authentication also works for the user's selected organization. Counts
+    occupied call slots, including dialing/ringing calls before media starts,
+    using the concurrency limiter's stale-slot expiry. This is a snapshot,
+    not a reservation of capacity for a future call.
+    """
+    organization_id = user.selected_organization_id
+    try:
+        async with asyncio.timeout(5):
+            active_calls = await call_concurrency.get_org_active_calls(organization_id)
+    except (RedisError, OSError):
+        logger.exception(
+            "Organization call count unavailable for org {}", organization_id
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="Concurrent call count unavailable",
+            headers={"Cache-Control": "no-store"},
+        ) from None
+
+    response.headers["Cache-Control"] = "no-store"
+    return OrganizationConcurrentCallsResponse(
+        organization_id=organization_id, active_calls=active_calls
+    )
 
 
 class CurrentUsageResponse(BaseModel):
@@ -341,6 +395,8 @@ Supported `attribute` / `type` / `value` combinations:
 | `calledNumber`  | `text`        | `{ "value": "9911848" }`                     | substring match on `initial_context.called_number`   |
 | `dispositionCode` | `multiSelect` | `{ "codes": ["XFER", "DNC"] }`             | any of the codes in `gathered_context.mapped_call_disposition` |
 | `duration`      | `numberRange` | `{ "min": 60, "max": 300 }`                  | call duration (seconds), inclusive bounds            |
+| `callDirection` | `radio`       | `{ "status": "inbound" }`                    | `inbound` or `outbound`; any other value matches all |
+| `callChannel`   | `radio`       | `{ "status": "telephony" }`                  | `telephony`, `web`, or `chat` — the group of run modes for that channel |
 
 Unknown attributes and unsupported `type` values are silently ignored.
 
@@ -371,6 +427,16 @@ async def get_usage_history(
             '{"attribute":"duration","type":"numberRange","value":{"min":60,"max":300}}]',
             '[{"attribute":"dispositionCode","type":"multiSelect","value":{"codes":["XFER","DNC"]}}]',
         ],
+    ),
+    sort_by: Optional[str] = Query(
+        None,
+        description="Field to sort by ('duration'). Defaults to `created_at`.",
+        examples=["duration"],
+    ),
+    sort_order: str = Query(
+        "desc",
+        description="Sort order ('asc' or 'desc').",
+        pattern="^(asc|desc)$",
     ),
     user: UserModel = Depends(get_user),
 ):
@@ -404,6 +470,8 @@ async def get_usage_history(
             limit=limit,
             offset=offset,
             filters=parsed_filters,
+            sort_by=sort_by,
+            sort_order=sort_order,
         )
 
         total_pages = (total_count + limit - 1) // limit

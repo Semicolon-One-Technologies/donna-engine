@@ -1,4 +1,4 @@
-# Donna
+# Donna Engine
 
 Donna is a voice AI platform for building and deploying conversational agents.
 
@@ -7,7 +7,7 @@ Donna is a voice AI platform for building and deploying conversational agents.
 ## Get Started
 
 1. Clone this repository.
-2. Start services with Docker Compose from the repository root.
+2. Start services with Docker Compose from the repository root (`docker-compose up -d`).
 3. Open http://localhost:3010 and create your first voice agent.
 
 ## Product Links
@@ -17,10 +17,17 @@ Donna is a voice AI platform for building and deploying conversational agents.
 
 ## Features
 
-- Drag-and-drop workflow builder for voice agents
-- Telephony integrations and real-time voice orchestration
-- Flexible model integrations for LLM, TTS, and STT
-- Local and self-managed deployment options
+- Visual workflow builder for conversational AI agents
+- Multimodal support (Speech-to-Text, LLM, Text-to-Speech)
+- Telephony integrations (SIP, Telnyx, Exotel, Cloudonix, etc.)
+- WebRTC browser interface for testing and web widgets
+- Extensible tool calling and action execution
+
+## Developer Experience
+
+- One-command Docker setup for local development and self-hosting
+- Python backend and modular provider architecture for customization
+- Python and TypeScript SDKs for programmatic agent creation and management
 
 ## SDKs
 
