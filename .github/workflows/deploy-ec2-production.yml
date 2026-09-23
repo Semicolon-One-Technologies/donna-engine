@@ -181,9 +181,7 @@ jobs:
           ssh "$EC2_USER@$EC2_HOST" \
             "set -euo pipefail; \
             cd '$DEPLOY_PATH'; \
-            git fetch origin '$DEPLOY_REF'; \
-            git checkout -B '$DEPLOY_REF' \"origin/$DEPLOY_REF\"; \
-            git reset --hard \"origin/$DEPLOY_REF\"; \
+            git fetch --depth 1 origin '$DEPLOY_REF' && git reset --hard \"origin/$DEPLOY_REF\"; \
             REDIS_URL='$REDIS_URL' \
             OSS_JWT_SECRET='$OSS_JWT_SECRET' \
             API_IMAGE_TAG='$API_IMAGE_TAG' \
@@ -197,7 +195,7 @@ jobs:
             FORCE_TURN_RELAY='${FORCE_TURN_RELAY:-}' \
             ENABLE_TELEMETRY='${ENABLE_TELEMETRY:-}' \
             FASTAPI_WORKERS='${FASTAPI_WORKERS:-}' \
-            docker compose --profile remote pull api ui; \
+            docker compose --profile remote pull; \
             REDIS_URL='$REDIS_URL' \
             OSS_JWT_SECRET='$OSS_JWT_SECRET' \
             API_IMAGE_TAG='$API_IMAGE_TAG' \
@@ -212,6 +210,7 @@ jobs:
             ENABLE_TELEMETRY='${ENABLE_TELEMETRY:-}' \
             FASTAPI_WORKERS='${FASTAPI_WORKERS:-}' \
             docker compose --profile remote up -d --remove-orphans; \
+            docker compose --profile remote restart nginx; \
             docker compose --profile remote ps"
 
       - name: Smoke check API health
