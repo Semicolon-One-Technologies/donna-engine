@@ -40,6 +40,22 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command: >
+      --requirepass ${REDIS_PASSWORD:-redissecret}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redissecret}", "ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+    networks:
+      - app-network
+
   minio:
     image: quay.io/minio/minio
     container_name: minio
@@ -125,14 +141,14 @@ services:
       - app-network
 
   api:
-    image: ${REGISTRY:-dograhai}/dograh-api:${API_IMAGE_TAG:-latest}
+    image: ${REGISTRY:-dograhai}/dograh-api:latest
     environment:
       # Core application config
       ENVIRONMENT: "${ENVIRONMENT:-local}"
       LOG_LEVEL: "INFO"
 
       # Set to "false" in .env to disable public signup (invite-only installs).
-      ENABLE_SIGNUP: "${ENABLE_SIGNUP:-false}"
+      ENABLE_SIGNUP: "${ENABLE_SIGNUP:-true}"
 
       # Public origin for this deployment. The API derives BACKEND_API_ENDPOINT,
       # MINIO_PUBLIC_ENDPOINT and TURN_HOST from PUBLIC_BASE_URL / PUBLIC_HOST when
@@ -150,10 +166,8 @@ services:
       # Database configuration (using containerized postgres)
       DATABASE_URL: "postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres"
 
-      # Redis configuration (external ElastiCache/Valkey over TLS)
-      # Example format:
-      # rediss://:<auth_token>@donna-cache-tutpax.serverless.cac1.cache.amazonaws.com:6379/0
-      REDIS_URL: "${REDIS_URL:?REDIS_URL must be set to your external ElastiCache endpoint}"
+      # Redis configuration (using containerized redis)
+      REDIS_URL: "redis://:${REDIS_PASSWORD:-redissecret}@redis:6379"
 
       # Storage configuration - bundled MinIO by default. Set ENABLE_AWS_S3=true
       # in .env to make the API use AWS S3 or another S3-compatible server.
@@ -258,6 +272,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       minio:
         condition: service_healthy
     healthcheck:
@@ -274,7 +290,7 @@ services:
       - app-network
 
   ui:
-    image: ${REGISTRY:-dograhai}/dograh-ui:${UI_IMAGE_TAG:-latest}
+    image: ${REGISTRY:-dograhai}/dograh-ui:latest
     environment:
       # Bind the Next.js standalone server to all interfaces
       HOSTNAME: "0.0.0.0"
@@ -341,6 +357,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
   minio-data:
     driver: local
   nginx-generated:
